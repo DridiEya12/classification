@@ -1,6 +1,7 @@
 import logging
 import os
-
+import mlflow
+import mlflow.pytorch
 import torch
 from torch.cuda.amp import GradScaler, autocast
 from torch.optim.lr_scheduler import StepLR
@@ -56,6 +57,12 @@ def train_classifier(model, train_loader, val_loader, criterion, optimizer, num_
     scheduler = StepLR(optimizer, step_size=20, gamma=0.1)
 
     model.to(device)  # Move model to the device
+    mlflow.start_run()
+    mlflow.log_param("epochs", num_epochs)
+    mlflow.log_param("learning_rate", optimizer.param_groups[0]["lr"])
+    mlflow.log_param("backbone", backbone)
+    mlflow.log_param("freeze_backbone", freeze_backbone)
+
 
     for epoch in range(num_epochs):
         # Training phase
