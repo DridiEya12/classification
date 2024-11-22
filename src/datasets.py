@@ -1,5 +1,4 @@
 import os
-
 from PIL import Image
 from torch.utils.data import Dataset
 
@@ -20,17 +19,24 @@ class Dataset(Dataset):
 
     def _make_dataset(self):
         imgs = []
-
-        valid_extensions = {'.png', '.jpg', '.jpeg'}  # Set of valid file extensions
+        valid_extensions = {'.png', '.jpg', '.jpeg'}  # Extensions valides
 
         for class_name in self.classes:
             class_dir = os.path.join(self.root_dir, class_name)
+            
+            # Vérifiez si le dossier existe
+            if not os.path.exists(class_dir):
+                raise FileNotFoundError(f"Le dossier '{class_dir}' n'existe pas. Vérifiez le chemin du dataset.")
+            
             class_idx = self.class_to_idx[class_name]
             for fname in os.listdir(class_dir):
                 if any(fname.lower().endswith(ext) for ext in valid_extensions):
                     path = os.path.join(class_dir, fname)
                     imgs.append((path, class_idx))
 
+        if not imgs:
+            raise RuntimeError(f"Aucune image valide trouvée dans '{self.root_dir}'. Vérifiez vos fichiers.")
+        
         return imgs
 
     def __len__(self):
@@ -47,12 +53,16 @@ class Dataset(Dataset):
             idx (int): The index of the sample to retrieve.
 
         Returns:
-            tuple: A tuple (image, label, filename)
+            tuple: A tuple (image, label)
         """
         # Fetch the image path and label
         img_path, label = self.imgs[idx]
 
-        image = Image.open(img_path).convert('RGB')
+        try:
+            image = Image.open(img_path).convert('RGB')
+        except Exception as e:
+            raise RuntimeError(f"Impossible d'ouvrir l'image : {img_path}. Erreur : {e}")
+
         if self.transform:
             image = self.transform(image)
 
